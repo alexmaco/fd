@@ -411,6 +411,18 @@ fn spawn_senders(
                 }
             }
 
+            if cfg!(unix) {
+                if let Some(ref user_constraint) = config.user_constraint {
+                    if let Ok(ref metadata) = entry_path.metadata() {
+                        if !user_constraint.matches(&metadata) {
+                            return ignore::WalkState::Continue;
+                        }
+                    } else {
+                        return ignore::WalkState::Continue;
+                    }
+                }
+            }
+
             // Filter out unwanted sizes if it is a file and we have been given size constraints.
             if !config.size_constraints.is_empty() {
                 if entry_path.is_file() {
