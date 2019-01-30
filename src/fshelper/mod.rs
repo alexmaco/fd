@@ -15,17 +15,17 @@ use std::path::{Path, PathBuf};
 
 use ignore::DirEntry;
 
-pub fn path_absolute_form(path: &Path) -> io::Result<PathBuf> {
+pub fn path_absolute_form(path: &Path, current_dir: &Path) -> PathBuf {
     if path.is_absolute() {
-        return Ok(path.to_path_buf());
+        return path.to_path_buf();
     }
 
     let path = path.strip_prefix(".").unwrap_or(path);
-    current_dir().map(|path_buf| path_buf.join(path))
+    current_dir.join(path)
 }
 
-pub fn absolute_path(path: &Path) -> io::Result<PathBuf> {
-    let path_buf = path_absolute_form(path)?;
+pub fn absolute_path(path: &Path, current_dir: &Path) -> io::Result<PathBuf> {
+    let path_buf = path_absolute_form(path, current_dir);
 
     #[cfg(windows)]
     let path_buf = Path::new(

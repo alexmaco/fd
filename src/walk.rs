@@ -9,7 +9,10 @@
 use crate::exec;
 use crate::exit_codes::ExitCode;
 use crate::fshelper;
-use crate::internal::{opts::FdOptions, MAX_BUFFER_LENGTH};
+use crate::internal::{
+    opts::{FdOptions, FullPath},
+    MAX_BUFFER_LENGTH,
+};
 use crate::output;
 
 use std::error::Error;
@@ -304,7 +307,7 @@ fn spawn_senders(
 
             // Filter out unwanted extensions.
             if let Some(ref exts_regex) = config.extensions {
-                if let Some(path_str) = entry_path.file_name().and_then(|s| s.to_str()) {
+                if let Some(path_str) = entry.file_name().to_str() {
                     if !exts_regex.is_match(path_str) {
                         return ignore::WalkState::Continue;
                     }
@@ -351,24 +354,20 @@ fn spawn_senders(
                 }
             }
 
-            let search_str_o = if config.search_full_path {
-                match fshelper::path_absolute_form(entry_path) {
-                    Ok(path_abs_buf) => Some(path_abs_buf.to_string_lossy().into_owned().into()),
-                    Err(_) => {
-                        print_error_and_exit!("Unable to retrieve absolute path.");
-                    }
-                }
+            let search_str = if let FullPath::Yes { current_dir } = &config.search_full_path {
+                fshelper::path_absolute_form(entry_path, &current_dir)
+                    .to_string_lossy()
+                    .into_owned()
+                    .into()
             } else {
-                entry_path.file_name().map(|f| f.to_string_lossy())
+                entry.file_name().to_string_lossy()
             };
 
-            if let Some(search_str) = search_str_o {
-                if pattern.is_match(&*search_str) {
-                    // TODO: take care of the unwrap call
-                    tx_thread
-                        .send(WorkerResult::Entry(entry_path.to_owned()))
-                        .unwrap()
-                }
+            if pattern.is_match(&search_str) {
+                // TODO: take care of the unwrap call
+                tx_thread
+                    .send(WorkerResult::Entry(entry_path.to_owned()))
+                    .unwrap()
             }
 
             ignore::WalkState::Continue

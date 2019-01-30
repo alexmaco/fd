@@ -29,7 +29,7 @@ use regex::{RegexBuilder, RegexSetBuilder};
 use crate::exec::CommandTemplate;
 use crate::internal::{
     filter::{SizeFilter, TimeFilter},
-    opts::FdOptions,
+    opts::{FdOptions, FullPath},
     pattern_has_uppercase_char, transform_args_with_exec, FileTypes,
 };
 
@@ -45,6 +45,9 @@ fn main() {
     if !fshelper::is_dir(current_dir) {
         print_error_and_exit!("Could not get current directory.");
     }
+
+    let full_current_dir =
+        std::env::current_dir().expect("Could not get full path of current directory");
 
     // Get one or more root directories to search.
     let mut dir_vec: Vec<_> = match matches
@@ -72,7 +75,7 @@ fn main() {
             .map(|path_buffer| {
                 path_buffer
                     .canonicalize()
-                    .and_then(|pb| fshelper::absolute_path(pb.as_path()))
+                    .and_then(|pb| fshelper::absolute_path(pb.as_path(), &full_current_dir))
                     .unwrap()
             })
             .collect();
@@ -106,6 +109,14 @@ fn main() {
     // if the pattern has an uppercase character (smart case).
     let case_sensitive = !matches.is_present("ignore-case")
         && (matches.is_present("case-sensitive") || pattern_has_uppercase_char(&pattern_regex));
+
+    let search_full_path = if matches.is_present("full-path") {
+        FullPath::Yes {
+            current_dir: full_current_dir,
+        }
+    } else {
+        FullPath::No
+    };
 
     let colored_output = match matches.value_of("color") {
         Some("always") => true,
@@ -165,7 +176,7 @@ fn main() {
 
     let config = FdOptions {
         case_sensitive,
-        search_full_path: matches.is_present("full-path"),
+        search_full_path,
         ignore_hidden: !(matches.is_present("hidden")
             || matches.occurrences_of("rg-alias-hidden-ignore") >= 2),
         read_fdignore: !(matches.is_present("no-ignore")

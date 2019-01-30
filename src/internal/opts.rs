@@ -14,7 +14,7 @@ pub struct FdOptions {
 
     /// Whether to search within the full file path or just the base name (filename or directory
     /// name).
-    pub search_full_path: bool,
+    pub search_full_path: FullPath,
 
     /// Whether to ignore hidden files and directories (or not).
     pub ignore_hidden: bool,
@@ -75,4 +75,9 @@ pub struct FdOptions {
 
     /// Whether or not to display filesystem errors
     pub show_filesystem_errors: bool,
+}
+
+pub enum FullPath {
+    Yes { current_dir: PathBuf },
+    No,
 }
