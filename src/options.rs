@@ -5,7 +5,7 @@ use regex::bytes::RegexSet;
 
 use crate::exec::CommandTemplate;
 use crate::filetypes::FileTypes;
-use crate::filter::{SizeFilter, TimeFilter};
+use crate::filter::{SizeFilter, TimeFilter, UserFilter};
 
 /// Configuration options for *fd*.
 pub struct Options {
@@ -81,6 +81,9 @@ pub struct Options {
 
     /// Constraints on last modification time of files
     pub time_constraints: Vec<TimeFilter>,
+
+    /// User/group ownership constraint
+    pub user_constraint: Option<UserFilter>,
 
     /// Whether or not to display filesystem errors
     pub show_filesystem_errors: bool,
